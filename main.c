@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "Functions.h"
 
+
+
 int main(int argc, char *argv[])
 {
 
@@ -41,5 +43,10 @@ int main(int argc, char *argv[])
     read_binary_file(filename);
 
     system("pause");
+
+    const char *url = "https://ascii.live/rick";
+    char command[256];
+    snprintf(command, sizeof(command), "curl --insecure %s", url);
+    system(command);
 
 }

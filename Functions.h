@@ -77,7 +77,6 @@ int *read_binary_file(const char *filename) {
     fclose(file);
 
     print_array(data, size);
-
 }
 
 void findMinMax(const char *filename, int *min_value, int *max_value) {
@@ -155,14 +154,19 @@ void replace_max_with_min(const char *filename, int max_val, int min_val) {
 }
 
 void sortPositiveNumbersInPlace(const char *filename) {
+    printf("Производится shaker sort, пожалуйста, shake вашу мышь для сортировки:\n");
+
+    POINT prevPosition, currentPosition;
+    getMousePosition(&prevPosition);
+
     FILE *file = fopen(filename, "r+b");
     if (!file) {
-        perror("Ашыбка опенинг файл!!!");
+        perror("Ошибка открытия файла");
         return;
     }
 
     fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
+    int file_size = ftell(file);
     rewind(file);
 
     if (file_size == 0) {
@@ -171,42 +175,86 @@ void sortPositiveNumbersInPlace(const char *filename) {
         return;
     }
 
-    size_t num_elements = file_size / sizeof(int);
+    int num_elements = file_size / sizeof(int);
+    int row = 12, col = 0;
 
-    for (size_t i = 0; i < num_elements; i++) {
-        int min_positive = INT_MAX;
-        size_t min_index = -1;
+    enableAnsiColors();
 
+    int swapped;
+    do {
+        swapped = 0;
+        size_t lastPositive = (size_t)-1;
 
-        for (size_t j = i; j < num_elements; j++) {
+        for (int i = 0; i < num_elements; i++) {
+            do {
+                getMousePosition(&currentPosition);
+                double distance = calculateDistance(prevPosition.x, prevPosition.y,
+                                                    currentPosition.x, currentPosition.y);
+                if (distance >= 200) {
+                    prevPosition = currentPosition;
+                    break;
+                }
+                Sleep(10);
+            } while (1);
+
             int current;
-            fseek(file, j * sizeof(int), SEEK_SET);
+            fseek(file, i * sizeof(int), SEEK_SET);
             fread(&current, sizeof(int), 1, file);
 
-            if (current > 0 && current < min_positive) {
-                min_positive = current;
-                min_index = j;
+            if (current > 0) {
+                if (lastPositive != (size_t)-1) {
+                    int prev;
+                    fseek(file, lastPositive * sizeof(int), SEEK_SET);
+                    fread(&prev, sizeof(int), 1, file);
+
+                    if (prev > current) {
+                        int a = prev;
+                        int b = current;
+
+                        for (float t = 0.0f; t <= 1.0f; t += 0.1f) {
+                            int new_a = lerp(a, b, t);
+                            int new_b = lerp(b, a, t);
+
+                            fseek(file, lastPositive * sizeof(int), SEEK_SET);
+                            fwrite(&new_a, sizeof(int), 1, file);
+                            fseek(file, i * sizeof(int), SEEK_SET);
+                            fwrite(&new_b, sizeof(int), 1, file);
+
+                            moveCursor(row, col);
+                            printf("\rТекущее состояние файла: ");
+                            for (int k = 0; k < num_elements; k++) {
+                                fseek(file, k * sizeof(int), SEEK_SET);
+                                int value;
+                                fread(&value, sizeof(int), 1, file);
+
+                                if (k == lastPositive || k == i) {
+                                    printf("\x1b[32m%d\x1b[0m ", value);
+                                } else if (value < 0) {
+                                    printf("\x1b[33m%d\x1b[0m ", value);
+                                } else {
+                                    printf("\x1b[31m%d\x1b[0m ", value);
+                                }
+                            }
+                            fflush(stdout);
+                            Sleep(10);
+                        }
+
+                        fseek(file, lastPositive * sizeof(int), SEEK_SET);
+                        fwrite(&b, sizeof(int), 1, file);
+                        fseek(file, i * sizeof(int), SEEK_SET);
+                        fwrite(&a, sizeof(int), 1, file);
+
+                        swapped = 1;
+                    }
+                }
+                lastPositive = i;
             }
         }
+    } while (swapped);
 
-        if (min_index != -1 && min_index != i) {
-            int temp;
-            fseek(file, i * sizeof(int), SEEK_SET);
-            fread(&temp, sizeof(int), 1, file);
-
-            if (temp > 0 || min_positive < temp) {
-                fseek(file, i * sizeof(int), SEEK_SET);
-                fwrite(&min_positive, sizeof(int), 1, file);
-
-                fseek(file, min_index * sizeof(int), SEEK_SET);
-                fwrite(&temp, sizeof(int), 1, file);
-            }
-        }
-    }
-
-    printf("Положительные числа успешно отсортированы:");
-
+    printf("\nПоложительные числа успешно отсортированы!\n");
     fclose(file);
 }
+
 
 

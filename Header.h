@@ -4,6 +4,7 @@
 #include <locale.h>
 #include <windows.h>
 #include <time.h>
+#include <math.h>
 
 int validate_and_parse_int(const char *input, int *output) {
     if (input == NULL || *input == '\0') {
@@ -71,7 +72,7 @@ int check_int_1(char *input) {
         is_negative = 1;
         ptr++;
     }
-    if (*ptr == '\0') { // Только минус
+    if (*ptr == '\0') {
         return 0;
     }
     long result = 0;
@@ -80,7 +81,7 @@ int check_int_1(char *input) {
             return 0;
         }
         int digit = *ptr - '0';
-        // Проверка на переполнение
+
         if (is_negative) {
             if (-result < (INT_MIN + digit) / 10) {
                 return 0;
@@ -233,6 +234,33 @@ char* new_input_metod() {
     return line;
 }
 
+void getMousePosition(POINT *point) {
+    GetCursorPos(point);
+}
+
+int lerp(int start, int end, float t) {
+    return (int)(start + t * (end - start));
+}
+
+void enableAnsiColors() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return;
+
+    DWORD dwMode = 0;
+    if (!GetConsoleMode(hOut, &dwMode)) return;
+
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
+}
+
+void moveCursor(int row, int col) {
+    COORD coord = { (short)col, (short)row };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
+double calculateDistance(int x1, int y1, int x2, int y2) {
+    return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+}
 
 void print_array(int *data, int size)
 {
